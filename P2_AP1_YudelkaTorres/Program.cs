@@ -1,4 +1,7 @@
 using P2_AP1_YudelkaTorres.Components;
+using P2_AP1_YudelkaTorres.Models;
+using P2_AP1_YudelkaTorres.DAL;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+var ConnectionString = builder.Configuration.GetConnectionString("SqlConstr");
+
+builder.Services.AddDbContextFactory<Contexto>(options => options.UseSqlite(ConnectionString));
+builder.Services.AddScoped<Registro>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
