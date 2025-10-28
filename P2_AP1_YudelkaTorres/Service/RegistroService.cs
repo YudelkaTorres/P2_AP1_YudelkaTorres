@@ -14,4 +14,18 @@ public class RegistroService(IDbContextFactory<Contexto> DbFactory)
             .AsNoTracking()
             .ToListAsync();
     }
+    public async Task<bool> Guardar(Registro registro)
+    {
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+
+        bool existe = await Existe(registro.RegistroId);
+
+        if (!existe)
+            contexto.Registro.Add(registro);
+        else
+            contexto.Registro.Update(registro);
+
+        return await contexto.SaveChangesAsync() > 0;
+    }
+
 }
