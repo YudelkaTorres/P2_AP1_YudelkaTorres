@@ -1,0 +1,116 @@
+﻿@page "/Registro/Index"
+@using P2_AP1_YudelkaTorres.Models
+@using P2_AP1_YudelkaTorres.Service
+@inject NavigationManager navigationManager
+@inject IJSRuntime JS
+@inject RegistroService registroService
+@rendermode InteractiveServer
+
+<PageTitle>Registro</PageTitle>
+    <div class="card show-lg">
+        <div class="card-header">
+            <h5 class="card-title">Registro</h5>
+            <a href="/EntradasHuacales/Create" class="btn btn-primary">
+                <span class="bi bi-plus-square"></span> Crear
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        @*Filtros*@  
+         <div class="row mb-3">
+            @*Filtrar por*@
+            <div class="col-3">
+                <label class="col-form-label"><strong>Filtrar por</strong></label>
+                <InputSelect class="form-select" @bind-Value="Filtro">
+                    <option value="" selected disabled>Elija una opción</option>
+                    <option value="RegistroId">RegistroId</option>
+                 </InputSelect>
+            </div>
+            @*Fecha-Desde*@
+            <div class="col-4">
+                <label class="col-form-label"><strong>Desde:</strong></label>
+                <InputDate @bind-Value="FechaInicio" class="form-control" />
+            </div>
+
+            @*Fecha-Hasta*@
+            <div class="col-4">
+                <label class="col-form-label"><strong>Hasta:</strong></label>
+                <InputDate @bind-Value="FechaFin" class="form-control" />
+            </div>
+
+            @*Búsqueda*@
+            <div class="col-4">
+                <label class="col-form-label"><strong>B&uacutesqueda</strong></label>
+                <div class="input-group">
+                    <input class="form-control" @bind="ValorFiltro" placeholder="Buscar" />
+                    <button type="button" class="btn btn-outline-primary bi bi-search" @onclick="Buscar"></button>
+                </div>
+           </div> 
+       </div>
+
+        <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>RegistroId</th>
+                        <th>Fecha</th>>
+                    </tr>
+                </thead>
+                <tbody>
+                @if (ListaRegistro.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="text-muted"> No se encontraron registros.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var registro in ListaRegistro)
+                    {
+                        <tr>
+                            <td>@registro.RegistroId</td>
+                            <td>@registro.Fecha.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+@code {
+    public DateTime? FechaInicio { get; set; }
+    public DateTime? FechaFin { get; set; }
+    public List<Registro> ListaRegistro { get; set; } = new List<Registro>();
+    public string Filtro { get; set; } = string.Empty;
+    public string ValorFiltro { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ListaRegistro = await registroService.Listar(e => true);
+    }
+
+    private async Task Buscar()
+    {
+        if (!string.IsNullOrWhiteSpace(ValorFiltro))
+        {
+            if (Filtro == "RegistroId" && int.TryParse(ValorFiltro, out int Id))
+                ListaRegistro = await registroService.Listar(e => e.RegistroId == Id);
+        }
+        else
+        {
+            ListaRegistro = await registroService.Listar(e => true);
+        }
+
+        if (FechaInicio.HasValue && FechaFin.HasValue)
+            ListaRegistro = ListaRegistro
+            .Where(e => e.Fecha.Date >= FechaInicio.Value.Date && e.Fecha.Date <= FechaFin.Value.Date)
+            .ToList();
+        else if (FechaInicio.HasValue)
+            ListaRegistro = ListaRegistro
+            .Where(e => e.Fecha.Date >= FechaInicio.Value.Date)
+            .ToList();
+        else if (FechaFin.HasValue)
+            ListaRegistro = ListaRegistro
+            .Where(e => e.Fecha.Date <= FechaFin.Value.Date)
+            .ToList();
+    }
+}
