@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 namespace P2_AP1_YudelkaTorres.Service;
 public class RegistroService(IDbContextFactory<Contexto> DbFactory)
 {
-    public async Task <List<Registro>> Listar (Expression<Func<Registro, bool>> criterio)
+    public async Task <List<Pedidos>> Listar (Expression<Func<Pedidos, bool>> criterio)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
         return await contexto.Registro
@@ -14,7 +14,7 @@ public class RegistroService(IDbContextFactory<Contexto> DbFactory)
             .AsNoTracking()
             .ToListAsync();
     }
-    public async Task<bool> Guardar(Registro registro)
+    public async Task<bool> Guardar(Pedidos registro)
     {
         await using var contexto = await DbFactory.CreateDbContextAsync();
 
