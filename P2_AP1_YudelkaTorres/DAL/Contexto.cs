@@ -6,7 +6,8 @@ namespace P2_AP1_YudelkaTorres.DAL;
 public class Contexto : DbContext
 {
     public Contexto(DbContextOptions<Contexto> options) : base(options) { }
-    public DbSet<Registro> Registro { get; set; }
+    public DbSet<Pedidos> Pedidos { get; set; }
+    public DbSet<PedidosDetalle> Pedidosdetalle { get; set; }
     public DbSet<Componente> Componentes { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
