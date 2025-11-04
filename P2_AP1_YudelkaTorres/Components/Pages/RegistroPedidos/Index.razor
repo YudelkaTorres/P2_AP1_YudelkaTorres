@@ -3,14 +3,14 @@
 @using P2_AP1_YudelkaTorres.Service
 @inject NavigationManager navigationManager
 @inject IJSRuntime JS
-@inject RegistroService registroService
+@inject RegistroPedidosService registroPedidosService
 @rendermode InteractiveServer
 
 <PageTitle>Registro</PageTitle>
     <div class="card show-lg">
         <div class="card-header">
-            <h5 class="card-title">Registro</h5>
-            <a href="/EntradasHuacales/Create" class="btn btn-primary">
+            <h5 class="card-title">Registro de Pedidos</h5>
+            <a href="/RegistroPedidos/Create" class="btn btn-primary">
                 <span class="bi bi-plus-square"></span> Crear
             </a>
         </div>
@@ -24,7 +24,8 @@
                 <label class="col-form-label"><strong>Filtrar por</strong></label>
                 <InputSelect class="form-select" @bind-Value="Filtro">
                     <option value="" selected disabled>Elija una opción</option>
-                    <option value="RegistroId">RegistroId</option>
+                    <option value="PedidoId">PedidoId</option>
+                    <option value="NombreCliente">NombreCliente</option>
                  </InputSelect>
             </div>
             @*Fecha-Desde*@
@@ -52,12 +53,15 @@
         <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th>RegistroId</th>
-                        <th>Fecha</th>>
+                        <th>PedidoId</th>
+                        <th>Fecha</th>
+                        <th>Nombre Completo</th>
+                        <th>Total</th>
+                        <th>Opciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                @if (ListaRegistro.Count == 0)
+                @if (ListaRegistroPedidos.Count == 0)
                 {
                     <tr>
                         <td colspan="6" class="text-muted"> No se encontraron registros.</td>
@@ -65,52 +69,116 @@
                 }
                 else
                 {
-                    @foreach (var registro in ListaRegistro)
+                    @foreach (var registropedido in ListaRegistroPedidos)
                     {
                         <tr>
-                            <td>@registro.RegistroId</td>
-                            <td>@registro.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@registropedido.PedidoId</td>
+                            <td>@registropedido.Fecha.ToString("dd/MM/yyyy")</td>
+                            <td>@registropedido.NombreCompleto</td>
+                            <td>@registropedido.Total.ToString("C")</td>
+                            <td>
+                            <a href="/RegistroPedidos/Edit/@registropedido.PedidoId" class="btn btn-outline-primary bi bi-pencil-square"></a>
+                            <button class="btn btn-outline-danger bi bi-trash" @onclick="() => MostrarModalEliminar(registropedido)"></button>
+                             </td>
                         </tr>
                     }
                 }
             </tbody>
         </table>
     </div>
+     @*Footer Conteo y total general*@  
+        <div class="card-footer d-flex justify-content-between">
+            <span>Cantidad de registros: @ListaRegistroPedidos.Count()</span>
+            <span>Total general: @ListaRegistroPedidos.Sum(e => e.Total).ToString("C")</span>
+        </div>
+        @*ModalEliminar*@  
+            <div class="modal fade @(MostrarPanelEliminar ? "show d-block" : "")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Eliminar Pedido</h5>
+                <button type="button" class="btn-close" @onclick()="CancelarEliminar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fw-bold text-danger">¿Está seguro que desea eliminar este pedido?</p>
+                        @if (PedidoSeleccionado != null)
+                        {
+                            <ul class="list-group">
+                                <li class="list-group-item"><strong>PedidoId:</strong> @PedidoSeleccionado.PedidoId</li>
+                                <li class="list-group-item"><strong>Fecha:</strong> @PedidoSeleccionado.Fecha.ToString("dd/MM/yyyy")</li>
+                                <li class="list-group-item"><strong>Total:</strong> @PedidoSeleccionado.Total.ToString("C")</li>
+                            </ul>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick()="CancelarEliminar">Cancelar</button>
+                        <button class="btn btn-danger" @onclick="ConfirmarEliminar">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 @code {
     public DateTime? FechaInicio { get; set; }
     public DateTime? FechaFin { get; set; }
-    public List<Pedidos> ListaRegistro { get; set; } = new List<Pedidos>();
+    public List<Pedidos> ListaRegistroPedidos { get; set; } = new List<Pedidos>();
     public string Filtro { get; set; } = string.Empty;
     public string ValorFiltro { get; set; } = string.Empty;
 
+    private bool MostrarPanelEliminar { get; set; } = false;
+    private Pedidos? PedidoSeleccionado { get; set; }
+
+
     protected override async Task OnInitializedAsync()
     {
-        ListaRegistro = await registroService.Listar(e => true);
+        ListaRegistroPedidos = await registroPedidosService.Listar(e => true);
     }
 
     private async Task Buscar()
     {
         if (!string.IsNullOrWhiteSpace(ValorFiltro))
         {
-            if (Filtro == "RegistroId" && int.TryParse(ValorFiltro, out int Id))
-                ListaRegistro = await registroService.Listar(e => e.RegistroId == Id);
+            if (Filtro == "PedidosId" && int.TryParse(ValorFiltro, out int Id))
+                ListaRegistroPedidos = await registroPedidosService.Listar(e => e.PedidoId == Id);
         }
         else
         {
-            ListaRegistro = await registroService.Listar(e => true);
+            ListaRegistroPedidos = await registroPedidosService.Listar(e => true);
         }
 
         if (FechaInicio.HasValue && FechaFin.HasValue)
-            ListaRegistro = ListaRegistro
+            ListaRegistroPedidos = ListaRegistroPedidos
             .Where(e => e.Fecha.Date >= FechaInicio.Value.Date && e.Fecha.Date <= FechaFin.Value.Date)
             .ToList();
         else if (FechaInicio.HasValue)
-            ListaRegistro = ListaRegistro
+            ListaRegistroPedidos = ListaRegistroPedidos
             .Where(e => e.Fecha.Date >= FechaInicio.Value.Date)
             .ToList();
         else if (FechaFin.HasValue)
-            ListaRegistro = ListaRegistro
+            ListaRegistroPedidos = ListaRegistroPedidos
             .Where(e => e.Fecha.Date <= FechaFin.Value.Date)
             .ToList();
     }
-}
+
+    private void MostrarModalEliminar(Pedidos pedido)
+    {
+        PedidoSeleccionado = pedido;
+        MostrarPanelEliminar = true;
+    }
+
+    private void CancelarEliminar()
+    {
+        PedidoSeleccionado = null;
+        MostrarPanelEliminar = false;
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        if (PedidoSeleccionado != null)
+        {
+            ListaRegistroPedidos = await registroPedidosService.Listar(e => true);
+            PedidoSeleccionado = null;
+            MostrarPanelEliminar = false;
+        }
+    }
+} 

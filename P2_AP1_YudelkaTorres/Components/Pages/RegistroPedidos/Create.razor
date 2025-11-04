@@ -1,0 +1,139 @@
+﻿@page "/RegistroPedidos/Create"
+@using Microsoft.EntityFrameworkCore
+@using P2_AP1_YudelkaTorres.Models
+@inject IDbContextFactory<P2_AP1_YudelkaTorres.DAL.Contexto> DbFactory
+@inject P2_AP1_YudelkaTorres.Service.RegistroPedidosService pedidosService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3 class="text-center">Registrar Pedido</h3>
+<hr />
+
+<EditForm Model="@pedido" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label class="form-label">Fecha</label>
+            <InputDate @bind-Value="pedido.Fecha" class="form-control" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Total</label>
+            <InputNumber @bind-Value="pedido.Total" class="form-control" disabled />
+        </div>
+    </div>
+
+    <h5>Detalles del Pedido</h5>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th>Componente</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var det in pedido.Detalle)
+                {
+                    <tr>
+                        <td>@componentes.FirstOrDefault(c => c.ComponenteId == det.ComponenteId)?.ComponenteId</td>
+                        <td>@det.Cantidad</td>
+                        <td>@det.Precio.ToString("C")</td>
+                        <td>@(det.Cantidad* det.Precio).ToString("C")</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverDetalle(det)">Remover</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mb-3">
+        <button type="button" class="btn btn-outline-primary" @onclick="AgregarDetalle">
+            <i class="bi bi-plus-circle"></i> Agregar Componente
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-success me-2">
+            <i class="bi bi-save"></i> Guardar
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="Volver">
+            <i class="bi bi-arrow-left"></i> Volver
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    private Pedidos pedido = new();
+    private List<Componente> componentes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        pedido = new Pedidos
+        {
+            Fecha = DateTime.Now,
+            Detalle = new List<PedidosDetalle>()
+        };
+
+        await using var contexto = await DbFactory.CreateDbContextAsync();
+        componentes = await contexto.Componentes.AsNoTracking().ToListAsync();
+    }
+
+    private void AgregarDetalle()
+    {
+        pedido.Detalle.Add(new PedidosDetalle());
+    }
+
+    private void RemoverDetalle(PedidosDetalle detalle)
+    {
+        pedido.Detalle.Remove(detalle);
+        ActualizarTotal();
+    }
+
+    private void OnComponenteChanged(PedidosDetalle detalle)
+    {
+        var comp = componentes.FirstOrDefault(c => c.ComponenteId == detalle.ComponenteId);
+        if (comp != null)
+        {
+            detalle.Precio = comp.Precio;
+        }
+        ActualizarTotal();
+    }
+
+    private void ActualizarTotal()
+    {
+        pedido.Total = pedido.Detalle.Sum(d => d.Precio * d.Cantidad);
+    }
+
+    private async Task Guardar()
+    {
+        if (pedido.Detalle.Count == 0)
+        {
+            await MostrarError("Debe agregar al menos un componente.");
+            return;
+        }
+
+        bool ok = await pedidosService.Guardar(pedido);
+        if (ok)
+        {
+            Navigation.NavigateTo("/RegistroPedidos");
+        }
+        else
+        {
+            await MostrarError("No se pudo guardar el pedido.");
+        }
+    }
+
+    private void Volver() => Navigation.NavigateTo("/RegistroPedidos");
+
+    private async Task MostrarError(string mensaje)
+    {
+        await JS.InvokeVoidAsync("alert", mensaje);
+    }
+}
