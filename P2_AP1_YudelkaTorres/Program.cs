@@ -13,7 +13,7 @@ builder.Services.AddRazorComponents()
 var ConnectionString = builder.Configuration.GetConnectionString("SqlConstr");
 
 builder.Services.AddDbContextFactory<Contexto>(options => options.UseSqlite(ConnectionString));
-builder.Services.AddScoped<RegistroService>();
+builder.Services.AddScoped<RegistroPedidosService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
